@@ -3,10 +3,9 @@
 Tintin_logger::Tintin_logger(void){
 	this->name = "Matt_daemon: ";
 	system("mkdir -p /var/log/Matt_daemon");
-//	this->file->open("/var/log/")
+	this->file.open("/var/log/Matt_daemon/Matt_daemon.log");
 }
 Tintin_logger::Tintin_logger(Tintin_logger const &toto){
-	*this = toto;
 }
 Tintin_logger::~Tintin_logger(void){}
 

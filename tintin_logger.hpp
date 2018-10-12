@@ -1,10 +1,11 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 class Tintin_logger
 {
 	public:
 		std::string name;
-//		ofstream file;
+		std::ofstream file;
 		Tintin_logger();
 		Tintin_logger(Tintin_logger const &toto);
 		~Tintin_logger();
