@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+
 class Tintin_logger
 {
 	public:
@@ -11,6 +12,7 @@ class Tintin_logger
 		~Tintin_logger();
 		void	log(std::string toto);
 		void	info(std::string toto);
+		void	error(std::string toto);
 	
 	private:
 		std::string getdate();
