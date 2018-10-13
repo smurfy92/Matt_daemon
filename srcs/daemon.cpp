@@ -2,6 +2,69 @@
 
 Tintin_logger logger;
 
+void	ft_free_mem(t_mem *mem)
+{
+	ft_strdel(&mem->data);
+	free(mem);
+}
+
+char	*ft_strnew(size_t size)
+{
+	char	*s;
+	int		i;
+
+	s = (char *)malloc(sizeof(*s) * (size + 1));
+	if (s == NULL)
+		return (NULL);
+	i = 0;
+	while ((size_t)i <= size)
+		s[i++] = 0;
+	return (s);
+}
+
+t_mem	*ft_memjoin(t_mem *dest, t_mem *src)
+{
+	t_mem *ret;
+
+	ret = (t_mem *)malloc(sizeof(t_mem));
+	if (!dest)
+	{
+		ret->data = ft_strnew(src->len);
+		ft_memcpy(ret->data, src->data, src->len);
+		ret->len = src->len;
+		return (ret);
+	}
+	ret->len = dest->len + src->len;
+	ret->data = ft_strnew(ret->len);
+	ft_memcpy((void*)ret->data, dest->data, dest->len);
+	ft_memcpy((void*)&ret->data[dest->len], src->data, src->len);
+	ft_free_mem(dest);
+	return (ret);
+}
+
+t_mem	*read_fd(int fd)
+{
+	t_mem	*mem;
+	t_mem	*buf;
+
+	mem = NULL;
+	buf = (t_mem *)malloc(sizeof(t_mem));
+	buf->data = ft_strnew(BUFFER + 1);
+	buf->len = 0;
+	while ((buf->len = read(fd, buf->data, BUFFER)))
+	{
+		mem = ft_memjoin(mem, buf);
+		ft_bzero(buf->data, buf->len);
+		if (buf->len < BUFFER)
+			break ;
+		buf->len = 0;
+	}
+	if (!mem)
+		return (buf);
+	ft_free_mem(buf);
+	return (mem);
+}
+
 int		ft_create_serveur()
 {
 	int					sock;
@@ -25,7 +88,7 @@ int		ft_create_serveur()
 		exit(-1);
 	}
 	logger.info("Server created");
-	listen(sock, 42);
+	listen(sock, 1);
 	return (sock);
 }
 
@@ -51,12 +114,41 @@ void	set_sigs()
 		sigaction(i,  &act, 0);
 }
 
+void	handle_connection(int cs, int socket)
+{
+	char buf[1024];
+	std::stringstream s;
+
+	buf[1023] = '\0';
+	logger.log("got connection");
+	while (42)
+	{
+		read(cs, buf, 1024);
+		s << "user input" << buf;
+		logger.log(s.str());
+	}
+}
+
 
 int	main(void)
 {
 	pid_t child;
+	int fd;
+	struct sockaddr_in6		sin;
+	socklen_t			*sizesin;
+	int cs;
+	int socket;
 
 	logger.info("Started.");
+
+	fd = open("/var/lock/matt_daemon.lock", O_CREAT | O_EXCL);
+	if (fd == -1)
+	{
+		logger.error("Error file locked");
+		std::cerr << "Can't open :/var/lock/matt_daemon.lock\n";
+		exit(-1);
+	}
+	flock(fd, LOCK_EX);
 	child = fork();
 	set_sigs();
 	if (child == 0)
@@ -65,11 +157,16 @@ int	main(void)
 		setsid();
 		close(0);
 		close(1);
-		ft_create_serveur();
+		socket = ft_create_serveur();
 		std::stringstream s;
 		s << "started. PID:" <<std::to_string(getpid());
-		logger.log(s.str());
-		while (42);
+		logger.info(s.str());
+		logger.info("Entering daemon mode");
+		while (42)
+		{
+			cs = accept(socket, (struct sockaddr*)&sin, sizesin);
+			handle_connection(cs, socket);
+		}
 	}
 	else
 		exit(-1);
