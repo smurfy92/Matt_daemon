@@ -14,6 +14,10 @@
 # include <arpa/inet.h>
 #include <sstream>
 #include "tintin_logger.hpp"
+extern "C"
+{
+	#include "../libft/includes/libft.h"
+}
 #define BUFFER 1024
 
 typedef struct		s_mem

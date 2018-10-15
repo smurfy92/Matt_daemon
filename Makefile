@@ -18,6 +18,7 @@ NAME = Matt_daemon
 SRCDIR = srcs/
 OBJDIR = objs/
 OBJ = $(addprefix $(OBJDIR), $(SRC:.cpp=.o))
+LIB = libft/libft.a
 
 CG = \033[92m
 CY =  \033[93m
@@ -25,12 +26,14 @@ CE = \033[0m
 CB = \033[34m
 INC = -I ./includes/
 
-all: start $(NAME)
+all: start lib $(NAME)
 
+lib:
+	-@make -C libft nohd
 
 $(NAME): $(OBJ)
-	@g++ -o $(NAME) $(OBJ) $(FLAG) $(INC) $(LIB);
-	@echo "\033[K$(CY)[MATT_DAEMON] :$(CE) $(CG)Compiling Matt_daemon$(CE)";
+	   @g++ -o $(NAME) $(OBJ) $(FLAG) $(INC) $(LIB);
+	   @echo "\033[K$(CY)[MATT_DAEMON] :$(CE) $(CG)Compiling Matt_daemon$(CE)";
 
 
 start:
@@ -51,10 +54,12 @@ $(OBJ): $(OBJDIR)%.o: $(SRCDIR)%.cpp
 
 clean: start
 	@echo "$(CY)[MATT_DAEMON] :$(CE) $(CG)Cleaning Matt_daemon objects$(CE)";
+	-@make -C libft nohdclean;
 	@/bin/rm -rf $(OBJ);
 
 fclean: start clean
 	@echo "\033[K$(CY)[MATT_DAEMON] :$(CE) $(CG)Cleaning binairies ...$(CE)";
+	-@make -C libft nohdfclean;
 	@/bin/rm -f $(NAME);
 
 re: fclean all

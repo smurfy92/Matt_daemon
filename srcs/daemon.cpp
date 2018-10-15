@@ -8,20 +8,6 @@ void	ft_free_mem(t_mem *mem)
 	free(mem);
 }
 
-char	*ft_strnew(size_t size)
-{
-	char	*s;
-	int		i;
-
-	s = (char *)malloc(sizeof(*s) * (size + 1));
-	if (s == NULL)
-		return (NULL);
-	i = 0;
-	while ((size_t)i <= size)
-		s[i++] = 0;
-	return (s);
-}
-
 t_mem	*ft_memjoin(t_mem *dest, t_mem *src)
 {
 	t_mem *ret;
@@ -117,14 +103,15 @@ void	set_sigs()
 void	handle_connection(int cs, int socket)
 {
 	char buf[1024];
+	t_mem *mem;
 	std::stringstream s;
 
 	buf[1023] = '\0';
 	logger.log("got connection");
 	while (42)
 	{
-		read(cs, buf, 1024);
-		s << "user input" << buf;
+		mem = read_fd(cs);
+		s << "user input" << mem->data;
 		logger.log(s.str());
 	}
 }
@@ -153,20 +140,28 @@ int	main(void)
 	set_sigs();
 	if (child == 0)
 	{
-		chdir("/");
 		setsid();
-		close(0);
-		close(1);
-		socket = ft_create_serveur();
-		std::stringstream s;
-		s << "started. PID:" <<std::to_string(getpid());
-		logger.info(s.str());
-		logger.info("Entering daemon mode");
-		while (42)
+		child = fork();
+		if (child == 0)
 		{
-			cs = accept(socket, (struct sockaddr*)&sin, sizesin);
-			handle_connection(cs, socket);
+			chdir("/");
+			close(0);
+			close(1);
+			close(2);
+			socket = ft_create_serveur();
+			std::stringstream s;
+			s << "started. PID:" <<std::to_string(getpid());
+			logger.info(s.str());
+			logger.info("Entering daemon mode");
+			while (42)
+			{
+				cs = accept(socket, (struct sockaddr*)&sin, sizesin);
+				logger.info("accepted connection");
+				handle_connection(cs, socket);
+			}
 		}
+		else
+			exit(-1);
 	}
 	else
 		exit(-1);
