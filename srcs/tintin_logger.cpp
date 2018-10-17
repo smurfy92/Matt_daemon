@@ -10,7 +10,7 @@ Tintin_logger::~Tintin_logger(void){}
 
 void	Tintin_logger::log(std::string toto){
 	this->file.open("/var/log/Matt_daemon/Matt_daemon.log", std::ios_base::app);
-	this->file << this->getdate() << " [ LOG ] - "<< this->name << toto << '\n';
+	this->file << this->getdate() << " [ LOG ]"<< this->name << toto << '\n';
 	this->file.close();
 }
 void	Tintin_logger::info(std::string toto){

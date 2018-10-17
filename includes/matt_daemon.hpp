@@ -23,7 +23,14 @@ extern "C"
 typedef struct		s_mem
 {
 	char			*data;
-	int				len;
-}					t_mem;
+	int			len;
+}				t_mem;
 
 
+typedef struct			s_daemon
+{
+	int			lock_file;
+	int			sock;
+}			t_daemon;
+
+void		ft_exit(t_daemon *daemon, int status);
