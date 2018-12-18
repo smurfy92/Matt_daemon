@@ -11,7 +11,7 @@
 # **************************************************************************** #
 
 SRC = daemon.cpp
-SRC += tintin_logger.cpp
+SRC += tintin_reporter.cpp
 
 NAME = Matt_daemon
 

@@ -1,30 +1,30 @@
-#include "../includes/tintin_logger.hpp"
+#include "../includes/tintin_reporter.hpp"
 
-Tintin_logger::Tintin_logger(void){
+Tintin_reporter::Tintin_reporter(void){
 	this->name = "Matt_daemon: ";
 	system("mkdir -p /var/log/Matt_daemon");
 }
-Tintin_logger::Tintin_logger(Tintin_logger const &toto){
+Tintin_reporter::Tintin_reporter(Tintin_reporter const &toto){
 }
-Tintin_logger::~Tintin_logger(void){}
+Tintin_reporter::~Tintin_reporter(void){}
 
-void	Tintin_logger::log(std::string toto){
+void	Tintin_reporter::log(std::string toto){
 	this->file.open("/var/log/Matt_daemon/Matt_daemon.log", std::ios_base::app);
 	this->file << this->getdate() << " [ LOG ]"<< this->name << toto << '\n';
 	this->file.close();
 }
-void	Tintin_logger::info(std::string toto){
+void	Tintin_reporter::info(std::string toto){
 	this->file.open("/var/log/Matt_daemon/Matt_daemon.log", std::ios_base::app);
 	this->file << this->getdate() << " [ INFO ]" << this->name << toto << '\n';
 	this->file.close();
 }
-void	Tintin_logger::error(std::string toto){
+void	Tintin_reporter::error(std::string toto){
 	this->file.open("/var/log/Matt_daemon/Matt_daemon.log", std::ios_base::app);
 	this->file << this->getdate() << " [ ERROR ]" << this->name << toto << '\n';
 	this->file.close();
 }
 
-std::string Tintin_logger::getdate(){
+std::string Tintin_reporter::getdate(){
 	time_t t = time(0);
 	tm* now = localtime(&t);
 	std::stringstream os;

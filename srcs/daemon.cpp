@@ -1,6 +1,7 @@
 #include "../includes/matt_daemon.hpp"
 
-Tintin_logger		logger;
+Tintin_reporter		logger;
+int			connections[3] = {-1, -1, -1};
 
 void	init_daemon(t_daemon *daemon)
 {
@@ -156,14 +157,20 @@ void	handle_connection(t_daemon *daemon, int cs)
 	{
 		mem = NULL;
 		mem = read_fd(cs);
-		if (mem == NULL)
-			ft_exit(daemon, -1);
+		if (mem == NULL || mem->len == 0)
+		{
+			connections[cs] = -1;
+			close(cs);
+		}
 		mem->data[mem->len - 1] = '\0';
 		s << "User input : " << mem->data;
+		logger.log(s.str());
+		s << "User input len : " << mem->len;
 		logger.log(s.str());
 		if (ft_strequ(mem->data, "quit") == 1)
 		{
 			close(cs);
+			connections[cs] = -1;
 			ft_exit(daemon, -1);
 		}
 		ft_free_mem(mem);
@@ -183,6 +190,16 @@ void	open_lock(t_daemon *daemon)
 	flock(daemon->lock_file, LOCK_EX);
 }
 
+int	check_connections()
+{
+	int i = -1;
+
+	while (++i < 3)
+		if (connections[i] == -1)
+			return (i);
+	return (-1);
+}
+
 
 int	main(void)
 {
@@ -193,6 +210,7 @@ int	main(void)
 	int cs;
 	int socket;
 	t_daemon		*daemon;
+	int tmp;
 
 	logger.info("Started.");
 
@@ -218,8 +236,25 @@ int	main(void)
 			while (42)
 			{
 				cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
-				logger.info("accepted connection");
-				handle_connection(daemon, cs);
+				tmp = check_connections();
+				if (tmp != -1)
+				{
+					connections[tmp] = cs;
+					child = fork();
+					if (child == 0)
+					{
+						s << "accepting connections number " << tmp;
+						logger.info(s.str());
+						logger.info("accepted connection");
+						handle_connection(daemon, cs);
+					}
+				}
+				else
+				{
+					ft_putstr_fd("Sorry to many connections\n", cs);
+					logger.error("too many connections");
+					close(cs);
+				}
 			}
 		}
 		else
