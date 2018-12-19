@@ -159,8 +159,14 @@ void	handle_connection(t_daemon *daemon, int cs)
 		mem = read_fd(cs);
 		if (mem == NULL || mem->len == 0)
 		{
-			connections[cs] = -1;
+			int i = -1;
+			while (++i < 3)
+				if (connections[i] == cs)
+					connections[i] = -1;
+			s << "closing socket : " << i;
+			logger.log(s.str());
 			close(cs);
+			return ;
 		}
 		mem->data[mem->len - 1] = '\0';
 		s << "User input : " << mem->data;
