@@ -1,7 +1,7 @@
 #include "../includes/matt_daemon.hpp"
 
 Tintin_reporter		logger;
-int			connections[3] = {-1, -1, -1};
+fd_set set;
 
 void	init_daemon(t_daemon *daemon)
 {
@@ -99,7 +99,7 @@ int		ft_create_serveur(t_daemon *daemon)
 		ft_exit(daemon, -1);
 	}
 	logger.info("Server created");
-	listen(sock, 42);
+	listen(sock, 3);
 	return (sock);
 }
 
@@ -159,12 +159,8 @@ void	handle_connection(t_daemon *daemon, int cs)
 		mem = read_fd(cs);
 		if (mem == NULL || mem->len == 0)
 		{
-			int i = -1;
-			while (++i < 3)
-				if (connections[i] == cs)
-					connections[i] = -1;
-			s << "closing socket : " << i;
 			logger.log(s.str());
+			FD_CLR(cs, &set);
 			close(cs);
 			return ;
 		}
@@ -175,8 +171,8 @@ void	handle_connection(t_daemon *daemon, int cs)
 		logger.log(s.str());
 		if (ft_strequ(mem->data, "quit") == 1)
 		{
+			FD_CLR(cs, &set);
 			close(cs);
-			connections[cs] = -1;
 			ft_exit(daemon, -1);
 		}
 		ft_free_mem(mem);
@@ -196,17 +192,6 @@ void	open_lock(t_daemon *daemon)
 	flock(daemon->lock_file, LOCK_EX);
 }
 
-int	check_connections()
-{
-	int i = -1;
-
-	while (++i < 3)
-		if (connections[i] == -1)
-			return (i);
-	return (-1);
-}
-
-
 int	main(void)
 {
 	pid_t child;
@@ -216,7 +201,7 @@ int	main(void)
 	int cs;
 	int socket;
 	t_daemon		*daemon;
-	int tmp;
+	int i;
 
 	logger.info("Started.");
 
@@ -237,29 +222,36 @@ int	main(void)
 			daemon->sock = ft_create_serveur(daemon);
 			std::stringstream s;
 			s << "started. PID:" <<std::to_string(getpid());
+			FD_ZERO(&set);
+  			FD_SET(daemon->sock, &set);
 			logger.info(s.str());
 			logger.info("Entering daemon mode");
 			while (42)
 			{
-				cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
-				tmp = check_connections();
-				if (tmp != -1)
+				logger.info("before select");
+				if (select(3 + 1, &set, NULL, NULL, NULL) < 0)
 				{
-					connections[tmp] = cs;
-					child = fork();
-					if (child == 0)
-					{
-						s << "accepting connections number " << tmp;
-						logger.info(s.str());
-						logger.info("accepted connection");
-						handle_connection(daemon, cs);
-					}
+					perror ("select");
+					logger.info("select error");
+					exit(EXIT_FAILURE);
 				}
-				else
+				logger.info("trying to accept");
+				for (i = 0; i <= 3; i++)
 				{
-					ft_putstr_fd("Sorry to many connections\n", cs);
-					logger.error("too many connections");
-					close(cs);
+					if (FD_ISSET(i, &set))
+					{
+
+						if (i == daemon->sock)
+						{
+							cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
+							logger.info("accepted connection");
+							FD_SET(cs, &set);
+						}
+						else
+						{
+							handle_connection(daemon, cs);
+						}
+					}
 				}
 			}
 		}
