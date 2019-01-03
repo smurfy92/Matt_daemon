@@ -1,0 +1,10 @@
+// If you haven't already, associate .jsonc files with "JSON with Comments (jsonc)"
+{
+    "label": "debian/stretch vagrant",
+    "root": "/home/vagrant",
+    "host": "127.0.0.1",
+    "port": 2222,
+    "username": "vagrant",
+    "privateKeyPath": "/Users/jtranchi/Desktop/vagrant/.vagrant/machines/default/virtualbox/private_key",
+    "password": true
+}
