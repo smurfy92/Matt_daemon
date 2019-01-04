@@ -2,6 +2,7 @@
 
 Tintin_reporter		logger;
 fd_set readset, writeset;
+int max_connections = 0;
 
 void	init_daemon(t_daemon *daemon)
 {
@@ -169,6 +170,7 @@ void	handle_connection(t_daemon *daemon, int cs)
 		logger.log(s.str());
 		FD_CLR(cs, &readset);
 		FD_CLR(cs, &writeset);
+		max_connections--;
 		close(cs);
 		return ;
 	}
@@ -259,15 +261,26 @@ int	main(void)
 							if ( i == daemon->sock )
 							{
 								cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
-								s << "Accepted connection with fd -> " <<std::to_string(cs);
-								logger.log(s.str());
-								s.str("");
+								if (max_connections > 2)
+								{
+										s <<  "too many connections ";
+										logger.log(s.str());
+										FD_CLR(cs, &readset);
+										FD_CLR(cs, &writeset);
+										close(cs);
+										break;
+								}
+								max_connections++;
 								if ( cs != -1 )
 								{
 									FD_SET(cs, &readset);
 									if ( cs > maxfd )
 										maxfd = cs;
 								}
+								s << "Accepted connection with fd -> " <<std::to_string(cs);
+								logger.log(s.str());
+								s.str("");
+								
 							}else {
 								handle_connection(daemon, i);
 							}
