@@ -1,7 +1,7 @@
 #include "../includes/matt_daemon.hpp"
 
 Tintin_reporter		logger;
-fd_set set;
+fd_set readset, writeset;
 
 void	init_daemon(t_daemon *daemon)
 {
@@ -56,14 +56,18 @@ t_mem	*read_fd(int fd)
 	buf = (t_mem *)malloc(sizeof(t_mem));
 	buf->data = ft_strnew(BUFFER + 1);
 	buf->len = 0;
+	logger.log("coucou");
 	while ((buf->len = read(fd, buf->data, BUFFER)))
 	{
+		logger.log("");
+		logger.info("Creating server");
 		mem = ft_memjoin(mem, buf);
 		ft_bzero(buf->data, buf->len);
 		if (buf->len < BUFFER)
 			break ;
 		buf->len = 0;
 	}
+	logger.log("caca");
 	if (!mem)
 		return (buf);
 	ft_free_mem(buf);
@@ -156,11 +160,13 @@ void	handle_connection(t_daemon *daemon, int cs)
 	while (42)
 	{
 		mem = NULL;
+		logger.log("before reading");
 		mem = read_fd(cs);
+		logger.log("after reading");
 		if (mem == NULL || mem->len == 0)
 		{
-			logger.log(s.str());
-			FD_CLR(cs, &set);
+			logger.log("killing connection");
+			FD_CLR(cs, &writeset);
 			close(cs);
 			return ;
 		}
@@ -171,7 +177,7 @@ void	handle_connection(t_daemon *daemon, int cs)
 		logger.log(s.str());
 		if (ft_strequ(mem->data, "quit") == 1)
 		{
-			FD_CLR(cs, &set);
+			FD_CLR(cs, &writeset);
 			close(cs);
 			ft_exit(daemon, -1);
 		}
@@ -201,7 +207,8 @@ int	main(void)
 	int cs;
 	int socket;
 	t_daemon		*daemon;
-	int i;
+	int i,  max_sock;
+	int iof = -1;
 
 	logger.info("Started.");
 
@@ -220,38 +227,55 @@ int	main(void)
 			close(1);
 			close(2);
 			daemon->sock = ft_create_serveur(daemon);
+			if ((iof = fcntl(daemon->sock, F_GETFL, 0)) != -1)
+         		fcntl(daemon->sock, F_SETFL, iof | O_NONBLOCK);
 			std::stringstream s;
 			s << "started. PID:" <<std::to_string(getpid());
-			FD_ZERO(&set);
-  			FD_SET(daemon->sock, &set);
+			FD_ZERO(&readset);
+  			FD_SET(daemon->sock, &readset);
 			logger.info(s.str());
 			logger.info("Entering daemon mode");
 			while (42)
 			{
+				memcpy(&writeset, &readset, sizeof(writeset));
 				logger.info("before select");
-				if (select(3 + 1, &set, NULL, NULL, NULL) < 0)
+				if (select(3 + 1, &writeset, NULL, NULL, NULL) < 0)
 				{
 					perror ("select");
 					logger.info("select error");
 					exit(EXIT_FAILURE);
 				}
-				logger.info("trying to accept");
+				// logger.info("trying to accept");
 				for (i = 0; i <= 3; i++)
 				{
-					if (FD_ISSET(i, &set))
+					if (FD_ISSET(i, &writeset))
 					{
-
-						if (i == daemon->sock)
+						if ( i == daemon->sock )  /* is it the listener socket?? */
 						{
 							cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
-							logger.info("accepted connection");
-							FD_SET(cs, &set);
-						}
-						else
-						{
+							if ( cs == -1 )
+							{
+								printf("accept failed: errno=%d\n", errno);
+								exit(1);
+							}
+							FD_SET(cs, &readset);  /* put into fd_set */
+							if ( cs > max_sock )
+								max_sock = cs;
+						}else {
+							/* ready to read from this socket */
 							handle_connection(daemon, cs);
 						}
 					}
+					// if (FD_ISSET(i, &readset))
+					// {
+					// 		cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
+					// 		logger.info("accepted connection");
+					// 		FD_SET(cs, &readset);
+					// }
+					// if (FD_ISSET(i, &writeset))
+					// {
+					// 	handle_connection(daemon, cs);
+					// }
 				}
 			}
 		}
