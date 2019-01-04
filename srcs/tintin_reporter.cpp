@@ -4,8 +4,7 @@ Tintin_reporter::Tintin_reporter(void){
 	this->name = "Matt_daemon: ";
 	system("mkdir -p /var/log/Matt_daemon");
 }
-Tintin_reporter::Tintin_reporter(Tintin_reporter const &toto){
-}
+Tintin_reporter::Tintin_reporter(Tintin_reporter const &toto){}
 Tintin_reporter::~Tintin_reporter(void){}
 
 void	Tintin_reporter::log(std::string toto){

@@ -4,22 +4,20 @@ Tintin_reporter		logger;
 fd_set readset, writeset;
 int max_connections = 0;
 
-void	init_daemon(t_daemon *daemon)
+t_daemon	*init_daemon(t_daemon *daemon)
 {
+	daemon = (t_daemon*)malloc(sizeof(t_daemon));
 	daemon->lock_file = 0;
 	daemon->sock = 0;
+
+	return (daemon);
 }
 
 t_daemon		*get_daemon(void)
 {
 	static t_daemon *daemon = NULL;
 
-	if (!daemon)
-	{
-		daemon = (t_daemon*)malloc(sizeof(t_daemon));
-		init_daemon(daemon);		
-	}
-	return (daemon);
+	return (!daemon ? init_daemon(daemon) : daemon);
 }
 
 void	ft_free_mem(t_mem *mem)
@@ -249,7 +247,7 @@ int	main(void)
 				logger.info("waiting for connection");
 				if (select(maxfd + 1, &writeset, NULL, NULL, NULL) < 0)
 				{
-					perror ("select");
+					perror("select");
 					logger.info("select error");
 					ft_exit(daemon, -1);
 				}else
@@ -258,7 +256,7 @@ int	main(void)
 					{
 						if (FD_ISSET(i, &writeset))
 						{
-							if ( i == daemon->sock )
+							if (i == daemon->sock)
 							{
 								cs = accept(daemon->sock, (struct sockaddr*)&sin, &sizesin);
 								if (max_connections > 2)
